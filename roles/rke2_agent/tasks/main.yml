@@ -1,0 +1,23 @@
+- name: Install RKE2 agent
+  ansible.builtin.shell: curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+  args:
+    creates: /var/lib/rancher/rke2/bin/
+
+- name: Ensure the RKE2 config directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/rke2
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Create RKE2 config for worker nodes
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: /etc/rancher/rke2/config.yaml
+
+- name: Enable and Start RKE2 agent
+  ansible.builtin.systemd:
+    name: rke2-agent
+    enabled: yes
+    state: started
