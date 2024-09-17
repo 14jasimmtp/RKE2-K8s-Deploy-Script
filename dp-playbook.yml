@@ -4,8 +4,8 @@
   become: yes
   vars_files:
     - vars.yml
-  roles:
-    - rke2_server
+  # roles:
+  #   - rke2_server
   tasks:
     - name: Install RKE2 on the first master
       ansible.builtin.shell: |

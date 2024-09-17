@@ -1,8 +1,8 @@
 ---
-- name: Install RKE2
-  ansible.builtin.shell: curl -sfL https://get.rke2.io | sh -
-  args:
-    creates: /var/lib/rancher/rke2/bin/
+
+- name: Install RKE2 on other master nodes
+  ansible.builtin.shell: |
+    curl -sfL https://get.rke2.io | sh -
 
 - name: Ensure the RKE2 config directory exists
   ansible.builtin.file:
@@ -12,23 +12,12 @@
     owner: root
     group: root
 
-- name: Retrieve the RKE2 node token
-  ansible.builtin.slurp:
-    src: /var/lib/rancher/rke2/server/node-token
-  register: node_token
-  when: inventory_hostname == groups['master'][0]
-
-- name: Set RKE2 token fact
-  ansible.builtin.set_fact:
-    rke2_token: "{{ node_token['content'] | b64decode }}"
-  when: inventory_hostname == groups['master'][0]
-
-- name: Create RKE2 config for master nodes
+- name: Create RKE2 config for additional master nodes
   ansible.builtin.template:
     src: config.yml.j2
     dest: /etc/rancher/rke2/config.yaml
 
-- name: Start RKE2 server
+- name: Enable and Start RKE2 server on additional master nodes
   ansible.builtin.systemd:
     name: rke2-server
     enabled: yes

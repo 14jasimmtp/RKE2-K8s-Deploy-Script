@@ -1,5 +1,13 @@
 - name: RKE2 Deployment
-  hosts: master
+  hosts: master[0]
+  become: yes
+  vars_files:
+    - vars.yml
+  roles:
+    - rke2_initial
+
+- name: Configure and Start RKE2 on Worker Nodes
+  hosts: master[1:]
   become: yes
   vars_files:
     - vars.yml

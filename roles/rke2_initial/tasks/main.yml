@@ -1,0 +1,19 @@
+---
+
+- name: Install RKE2 on the first master
+  ansible.builtin.shell: |
+    curl -sfL https://get.rke2.io | sh -
+
+- name: Start RKE2 server on the first master
+  ansible.builtin.systemd:
+    name: rke2-server
+    enabled: yes
+    state: started
+
+- name: Retrieve the RKE2 node token on the first master
+  ansible.builtin.command: cat /var/lib/rancher/rke2/server/node-token
+  register: node_token
+
+- name: Store the token
+  ansible.builtin.set_fact:
+    rke2_token: "{{ node_token.stdout }}"

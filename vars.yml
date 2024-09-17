@@ -1,1 +1,2 @@
 rke2_server_ip: "10.0.0.31:9345"
+rke2_token: "{{ hostvars[groups['master'][0]].rke2_token }}"
