@@ -1,0 +1,80 @@
+---
+- name: RKE2 Deployment
+  hosts: master[0] 
+  become: yes
+  tasks:
+    - name: Install RKE2 on the first master
+      shell: |
+        curl -sfL https://get.rke2.io | sh -
+
+    - name: Start RKE2 server on the first master
+      systemd:
+        name: rke2-server
+        enabled: yes
+        state: started
+
+    - name: Retrieve the RKE2 node token on the first master
+      command: cat /var/lib/rancher/rke2/server/node-token
+      register: node_token
+
+    - name: Store the token
+      set_fact:
+        rke2_token: "{{ node_token.stdout }}"
+
+- name: Configure and Start RKE2 on Additional Master Nodes
+  hosts: master[1:]  
+  become: yes
+  tasks:
+    - name: Install RKE2 on other master nodes
+      shell: |
+        curl -sfL https://get.rke2.io | sh -
+
+    - name: Ensure the RKE2 config directory exists
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Create RKE2 config for additional master nodes
+      copy:
+        content: |
+          server: https://10.0.0.31:9345
+          token: {{ hostvars[groups['master'][0]].rke2_token }}
+        dest: /etc/rancher/rke2/config.yaml
+
+    - name: Enable and Start RKE2 server on additional master nodes
+      systemd:
+        name: rke2-server
+        enabled: yes
+        state: started
+
+- name: Configure and Start RKE2 on Worker Nodes
+  hosts: worker
+  become: yes
+  tasks:
+    - name: Install RKE2 on worker nodes
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+
+    - name: Ensure the RKE2 config directory exists
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Create RKE2 config for worker nodes
+      copy:
+        content: |
+          server: https://10.0.0.31:9345
+          token: {{ hostvars[groups['master'][0]].rke2_token }}
+        dest: /etc/rancher/rke2/config.yaml
+
+    - name: Enable and Start RKE2 agent on worker nodes
+      systemd:
+        name: rke2-agent
+        enabled: yes
+        state: started
